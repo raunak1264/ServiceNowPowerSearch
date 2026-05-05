@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SN Power Search — ServiceNow Query Builder</title>
+  <meta name="description" content="Keyboard-first ServiceNow query builder Chrome extension with dynamic field selection, multi-condition search, and reference field resolver." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:           #07090f;
+      --bg-surface:   #0b0e18;
+      --bg-card:      #101525;
+      --bg-card2:     #141c2e;
+      --border:       #1a2540;
+      --border-card:  #1c2d4a;
+      --accent:       #4a7cff;
+      --accent-bright:#6b96ff;
+      --accent-dim:   rgba(74,124,255,0.10);
+      --accent-glow:  rgba(74,124,255,0.22);
+      --success:      #0fd4a2;
+      --success-dim:  rgba(15,212,162,0.10);
+      --warning:      #f5a428;
+      --text:         #dde6f5;
+      --text-2:       #6e85a8;
+      --text-3:       #2f4260;
+      --font:         'Plus Jakarta Sans', sans-serif;
+      --mono:         'JetBrains Mono', monospace;
+      --r:            8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* ── Grid background ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(74,124,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74,124,255,0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Glow orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+      animation: orbFloat 12s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(74,124,255,0.12) 0%, transparent 70%);
+      top: -200px; left: -200px;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(107,75,255,0.10) 0%, transparent 70%);
+      bottom: -150px; right: -150px;
+      animation-delay: -6s;
+    }
+    .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(15,212,162,0.07) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -3s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0); }
+      33%       { transform: translate(30px, -20px); }
+      66%       { transform: translate(-20px, 30px); }
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7,9,15,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent) 0%, #6b4bff 100%);
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      flex-shrink: 0;
+    }
+    .nav-logo-icon svg { width: 14px; height: 14px; color: #fff; }
+    .nav-logo-text {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0;
+    }
+    .nav-version {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-3);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 100px 0 80px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(74,124,255,0.25);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--accent-bright);
+      margin-bottom: 28px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .eyebrow-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 6vw, 66px);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -0.5px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+    .hero h1 .line-1 { display: block; color: var(--text); }
+    .hero h1 .line-2 {
+      display: block;
+      background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 50%, var(--success) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      color: var(--text-2);
+      max-width: 520px;
+      margin: 0 auto 44px;
+      font-weight: 400;
+      line-height: 1.7;
+      animation: fadeUp 0.6s ease 0.2s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s ease 0.3s both;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--accent) 0%, #6b4bff 100%);
+      color: #fff;
+      text-decoration: none;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      padding: 13px 28px;
+      border-radius: var(--r);
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 6px 24px var(--accent-glow);
+      letter-spacing: 0.2px;
+    }
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px var(--accent-glow);
+    }
+    .btn-primary svg { width: 16px; height: 16px; }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      color: var(--text-2);
+      text-decoration: none;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 13px 24px;
+      border-radius: var(--r);
+      border: 1px solid var(--border-card);
+      transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+    }
+    .btn-secondary:hover {
+      background: var(--bg-card2);
+      border-color: var(--accent);
+      color: var(--accent-bright);
+      transform: translateY(-2px);
+    }
+    .btn-secondary svg { width: 15px; height: 15px; }
+
+    /* ── PREVIEW CARD ── */
+    .preview-wrap {
+      margin: 64px 0 0;
+      position: relative;
+      z-index: 1;
+      animation: fadeUp 0.7s ease 0.4s both;
+    }
+    .preview-glow {
+      position: absolute;
+      inset: -40px;
+      background: radial-gradient(ellipse at center, rgba(74,124,255,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .preview-frame {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(74,124,255,0.1);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .preview-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      background: #0b0e18;
+      border-bottom: 1px solid var(--border);
+    }
+    .preview-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .preview-dot:nth-child(1) { background: #ff5f57; }
+    .preview-dot:nth-child(2) { background: #febc2e; }
+    .preview-dot:nth-child(3) { background: #28c840; }
+    .preview-title {
+      margin-left: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-3);
+    }
+
+    /* Mini popup mockup */
+    .popup-mock {
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .mock-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mock-logo {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mock-logo-icon {
+      width: 24px; height: 24px;
+      background: linear-gradient(135deg, var(--accent), #6b4bff);
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mock-logo-icon svg { width: 10px; height: 10px; color: #fff; }
+    .mock-title { font-size: 12px; font-weight: 700; color: var(--text); font-family: var(--font); }
+    .mock-badge {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 10px;
+      color: var(--accent-bright);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .mock-badge-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 5px var(--success);
+    }
+    .mock-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-3);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .mock-input {
+      background: #0f1420;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 11px;
+      color: var(--text-2);
+      width: 100%;
+      margin-bottom: 10px;
+      font-family: var(--mono);
+    }
+    .mock-row { display: flex; gap: 8px; margin-bottom: 10px; }
+    .mock-row .mock-input { margin-bottom: 0; }
+    .mock-chips {
+      display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .mock-chip {
+      background: rgba(74,124,255,0.1);
+      border: 1px solid rgba(74,124,255,0.25);
+      border-radius: 100px;
+      padding: 3px 9px;
+      font-size: 10px;
+      color: var(--accent-bright);
+    }
+    .mock-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 7px 10px;
+      font-size: 10px;
+      margin-bottom: 12px;
+      line-height: 1.7;
+    }
+    .qs-table { color: var(--accent-bright); font-weight: 600; }
+    .qs-arrow { color: var(--text-3); }
+    .qs-field { color: var(--success); }
+    .qs-op    { color: var(--warning); }
+    .qs-val   { color: var(--text); }
+    .mock-btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      background: linear-gradient(135deg, var(--accent), #6b4bff);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      font-family: var(--font);
+    }
+
+    /* ── FEATURES ── */
+    .section {
+      padding: 96px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .section h2 {
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .section-sub {
+      font-size: 17px;
+      color: var(--text-2);
+      max-width: 480px;
+      margin-bottom: 56px;
+      line-height: 1.7;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 28px;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent-dim) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(74,124,255,0.35);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+    }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+      font-size: 20px;
+      position: relative;
+    }
+    .feature-icon.blue  { background: rgba(74,124,255,0.12); }
+    .feature-icon.green { background: rgba(15,212,162,0.12); }
+    .feature-icon.purple{ background: rgba(167,139,250,0.12); }
+    .feature-icon.orange{ background: rgba(245,164,40,0.12); }
+
+    .feature-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      letter-spacing: 0;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.65;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 600px;
+    }
+
+    .step {
+      display: flex;
+      gap: 24px;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 44px;
+      width: 2px;
+      height: calc(100% - 20px);
+      background: linear-gradient(to bottom, var(--border-card), transparent);
+    }
+
+    .step-num {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--border-card);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-content {
+      padding: 8px 0 40px;
+    }
+    .step-content h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      letter-spacing: 0;
+    }
+    .step-content p {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.65;
+    }
+
+    /* ── INSTALL CTA ── */
+    .cta-section {
+      padding: 80px 0 100px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      padding: 64px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -100px; left: 50%;
+      transform: translateX(-50%);
+      width: 500px; height: 300px;
+      background: radial-gradient(ellipse at center, rgba(74,124,255,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-card h2 {
+      font-size: clamp(24px, 3.5vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      margin-bottom: 14px;
+      color: var(--text);
+    }
+    .cta-card p {
+      font-size: 16px;
+      color: var(--text-2);
+      margin-bottom: 36px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 0;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+    .footer-left {
+      font-size: 13px;
+      color: var(--text-3);
+    }
+    .footer-left a {
+      color: var(--text-2);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .footer-left a:hover { color: var(--accent-bright); }
+    .footer-heart { color: #ff6b8a; }
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .footer-link {
+      font-size: 13px;
+      color: var(--text-3);
+      text-decoration: none;
+      transition: color 0.15s;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .footer-link:hover { color: var(--accent-bright); }
+    .footer-link svg { width: 14px; height: 14px; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .container { padding: 0 20px; }
+      .nav-inner  { padding: 0 20px; }
+      .footer-inner { padding: 0 20px; }
+      .hero { padding: 72px 0 60px; }
+      .cta-card { padding: 40px 24px; }
+      .section { padding: 64px 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+        <span class="nav-logo-text">SN Power Search</span>
+      </a>
+      <span class="nav-version">v1.5.0</span>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="container">
+    <section class="hero">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-dot"></span>
+        Chrome Extension · ServiceNow
+      </div>
+
+      <h1>
+        <span class="line-1">Query ServiceNow</span>
+        <span class="line-2">at the speed of thought</span>
+      </h1>
+
+      <p class="hero-sub">
+        A keyboard-first query builder for ServiceNow. Dynamic field autocomplete, multi-condition search, and reference field resolver — all without leaving your browser.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://chrome.google.com/webstore" class="btn-primary" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Add to Chrome — It's Free
+        </a>
+        <a href="https://github.com/raunak1264/ServiceNowPowerSearch" class="btn-secondary" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+
+      <!-- POPUP MOCKUP -->
+      <div class="preview-wrap">
+        <div class="preview-glow"></div>
+        <div class="preview-frame">
+          <div class="preview-bar">
+            <div class="preview-dot"></div>
+            <div class="preview-dot"></div>
+            <div class="preview-dot"></div>
+            <span class="preview-title">SN Power Search — v1.5.0</span>
+          </div>
+          <div class="popup-mock">
+            <div class="mock-header">
+              <div class="mock-logo">
+                <div class="mock-logo-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </div>
+                <span class="mock-title">Power Search</span>
+              </div>
+              <div class="mock-badge">
+                <span class="mock-badge-dot"></span>
+                mycompany
+              </div>
+            </div>
+
+            <div class="mock-label">Table</div>
+            <div class="mock-input">incident</div>
+
+            <div class="mock-chips">
+              <span class="mock-chip">state=1</span>
+              <span class="mock-chip">priority≤2</span>
+            </div>
+
+            <div class="mock-row">
+              <div style="flex:2">
+                <div class="mock-label">Field</div>
+                <div class="mock-input">assigned_to</div>
+              </div>
+              <div style="flex:1">
+                <div class="mock-label">Op</div>
+                <div class="mock-input">= equals</div>
+              </div>
+            </div>
+
+            <div class="mock-label">Query preview</div>
+            <div class="mock-preview">
+              <span class="qs-table">incident</span>
+              <span class="qs-arrow"> → </span>
+              <span class="qs-field">state</span><span class="qs-op">=</span><span class="qs-val">1</span>
+              <span class="qs-arrow">^</span>
+              <span class="qs-field">priority</span><span class="qs-op">≤</span><span class="qs-val">2</span>
+            </div>
+
+            <div class="mock-btn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              Search
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="container">
+    <section class="section reveal">
+      <span class="section-tag">Features</span>
+      <h2>Everything you need to<br>query faster</h2>
+      <p class="section-sub">Built for ServiceNow power users who live in list views and need queries done right, right now.</p>
+
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon blue">🔍</div>
+          <h3>Dynamic Field Autocomplete</h3>
+          <p>Fields are fetched live from your ServiceNow instance — including inherited fields from parent tables — so you always get the full picture.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon green">➕</div>
+          <h3>Multi-Condition Builder</h3>
+          <p>Stack as many conditions as you need with the chip-based builder. Commit each condition with Ctrl+Enter and keep going without losing context.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon purple">🔗</div>
+          <h3>Reference Field Resolver</h3>
+          <p>Type a display name and get the sys_id back instantly. No more hunting through SN to copy IDs for reference field queries.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon orange">⭐</div>
+          <h3>Saved Templates</h3>
+          <p>Save your most-used queries as named templates. Export them as JSON to share with your team or import them on another machine.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon blue">⌨️</div>
+          <h3>Keyboard First</h3>
+          <p>Tab to navigate, arrow keys for dropdowns, Enter to search, Ctrl+Enter to add a condition. Your hands never have to leave the keyboard.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon green">⚡</div>
+          <h3>Smart Field Cache</h3>
+          <p>Fields are cached per-instance for 1 hour so the popup opens instantly. Hit the refresh button any time to bust the cache and get fresh data.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="container">
+    <section class="section reveal">
+      <span class="section-tag">How it works</span>
+      <h2>From zero to query<br>in seconds</h2>
+      <p class="section-sub">No configuration needed. Open a ServiceNow tab, click the extension, and start building.</p>
+
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h3>Open any ServiceNow tab</h3>
+            <p>The extension automatically detects your instance and authenticates using your existing session — no credentials stored.</p>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h3>Pick your table</h3>
+            <p>Choose from common ITSM and CMDB tables, or type any custom table name. Fields load automatically from the live instance.</p>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h3>Build your conditions</h3>
+            <p>Search and select fields by label or API name, pick an operator, enter a value. Add as many conditions as you need with the chip builder.</p>
+          </div>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <h3>Hit Search</h3>
+            <p>The extension builds the full sysparm_query URL and navigates your SN tab directly to the filtered list view. Done.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- CTA -->
+  <div class="container">
+    <section class="cta-section reveal">
+      <div class="cta-card">
+        <h2>Ready to search smarter?</h2>
+        <p>Free forever. No account required. Works on any ServiceNow instance.</p>
+        <a href="https://chrome.google.com/webstore" class="btn-primary" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Add to Chrome — It's Free
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-left">
+        Made with <span class="footer-heart">❤️</span> by
+        <a href="https://github.com/raunak1264" target="_blank" rel="noopener">Raunak Kapoor</a>
+        &nbsp;·&nbsp; Not affiliated with ServiceNow, Inc.
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/raunak1264/ServiceNowPowerSearch/issues" class="footer-link" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Support
+        </a>
+        <a href="https://github.com/raunak1264/ServiceNowPowerSearch" class="footer-link" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((e, i) => {
+        if (e.isIntersecting) {
+          setTimeout(() => e.target.classList.add('visible'), i * 80);
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+  </script>
+</body>
+</html>
