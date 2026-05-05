@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1280"/>
+<title>SN Power Search — Store Screenshots</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;font-family:'Outfit',sans-serif;-webkit-font-smoothing:antialiased}
+.ss{width:1280px;height:800px;display:flex;align-items:stretch;overflow:hidden;position:relative;background:#07090f;border-bottom:2px solid #111}
+/* LEFT TEXT PANEL */
+.ss-left{width:480px;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:64px 52px;position:relative;z-index:2}
+.ss-num{font-size:11px;font-weight:700;letter-spacing:2.5px;color:#2f4260;text-transform:uppercase;margin-bottom:10px}
+.ss-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(74,124,255,0.10);border:1px solid rgba(74,124,255,0.25);border-radius:100px;padding:4px 12px;font-size:11px;font-weight:600;color:#4a7cff;margin-bottom:22px;width:fit-content}
+.ss-badge-dot{width:6px;height:6px;border-radius:50%;background:#4a7cff}
+.ss-headline{font-size:32px;font-weight:800;line-height:1.15;color:#dde6f5;margin-bottom:16px;letter-spacing:-0.5px}
+.ss-headline span{color:#4a7cff}
+.ss-sub{font-size:14px;line-height:1.65;color:#6e85a8;margin-bottom:32px;max-width:360px}
+.ss-features{display:flex;flex-direction:column;gap:10px}
+.ss-feat{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:#7a93b5;line-height:1.4}
+.ss-feat-dot{width:16px;height:16px;border-radius:50%;background:rgba(15,212,162,0.12);border:1px solid rgba(15,212,162,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.ss-feat-check{width:7px;height:7px;border-right:1.5px solid #0fd4a2;border-bottom:1.5px solid #0fd4a2;transform:rotate(45deg) translate(-1px,-1px)}
+/* RIGHT POPUP PANEL */
+.ss-right{flex:1;display:flex;align-items:center;justify-content:center;position:relative;padding:24px}
+.ss-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 70% 50%, rgba(74,124,255,0.04) 0%, transparent 70%)}
+/* POPUP FRAME */
+.popup{width:420px;background:#0b0e18;border-radius:10px;border:1px solid #1a2540;overflow:hidden;box-shadow:0 0 0 1px rgba(74,124,255,0.08);font-family:'Outfit',sans-serif;font-size:12px}
+/* POPUP HEADER */
+.ph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 7px;background:#0b0e18;border-bottom:1px solid #0f1825;box-shadow:inset 0 2px 0 0 #4a7cff}
+.ph-left{display:flex;align-items:center;gap:9px}
+.ph-logo{width:28px;height:28px;background:linear-gradient(135deg,#4a7cff,#6b4bff);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px}
+.ph-logo svg{width:13px;height:13px}
+.ph-title{font-size:13px;font-weight:700;color:#dde6f5;line-height:1.2}
+.ph-sub{font-size:9px;color:#2f4260;margin-top:1px}
+.ph-badge{display:flex;align-items:center;gap:5px;background:#101525;border:1px solid #1c2d4a;border-radius:4px;padding:3px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;color:#6b96ff}
+.ph-dot{width:6px;height:6px;border-radius:50%;background:#0fd4a2;flex-shrink:0}
+.ph-dot.off{background:#2f4260}
+/* POPUP BODY */
+.pb{padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+/* FORM ELEMENTS */
+.fl{font-size:9px;color:#2f4260;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.fi{width:100%;height:30px;background:#0f1420;border:1px solid #1a2540;border-radius:4px;color:#dde6f5;font-family:'Outfit',sans-serif;font-size:11.5px;padding:6px 9px;display:flex;align-items:center}
+.fi.active{border-color:#4a7cff;background:#101525}
+.fi-ph{color:#2f4260;font-size:11px}
+.fi-val{color:#dde6f5}
+.row{display:flex;gap:6px}
+.fg{display:flex;flex-direction:column;flex:1}
+.fg.shrink{flex:0 0 84px}
+.sep{height:1px;background:#0f1825;margin:2px 0}
+/* OPERATOR SELECT */
+.ops{background:#0f1420;border:1px solid #1a2540;border-radius:4px;color:#6e85a8;font-size:10.5px;padding:4px 7px;height:30px;display:flex;align-items:center}
+/* CONDITION CHIPS */
+.cond-row{background:rgba(74,124,255,0.04);border:1px solid rgba(74,124,255,0.15);border-radius:6px;padding:6px 8px;display:flex;flex-direction:column;gap:5px}
+.cond-hdr{display:flex;justify-content:space-between;align-items:center}
+.cond-lbl{font-size:9px;font-weight:600;color:#2f4260;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:5px}
+.cond-cnt{background:#4a7cff;color:#fff;font-size:8px;font-weight:700;border-radius:100px;padding:0 5px;height:15px;display:inline-flex;align-items:center}
+.cond-chips{display:flex;flex-wrap:wrap;gap:4px}
+.cond-chip{display:inline-flex;align-items:center;gap:4px;background:#101525;border:1px solid rgba(74,124,255,0.35);border-radius:100px;padding:3px 8px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#6b96ff}
+.cond-x{color:#2f4260;font-size:9px;cursor:pointer}
+/* REF RESOLVER */
+.ref-box{background:rgba(74,124,255,0.04);border:1px solid rgba(74,124,255,0.15);border-radius:6px;padding:7px 9px;display:flex;flex-direction:column;gap:4px}
+.ref-badge{display:inline-block;background:rgba(74,124,255,0.10);border:1px solid rgba(74,124,255,0.25);border-radius:2px;color:#4a7cff;font-size:7px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:0 3px;letter-spacing:0.5px;margin-right:4px}
+.ref-results{background:#141c2e;border:1px solid #1c2d4a;border-radius:4px;overflow:hidden;margin-top:2px}
+.ref-item{display:flex;justify-content:space-between;align-items:center;padding:5px 9px;border-bottom:1px solid #0f1825;gap:8px}
+.ref-item:last-child{border-bottom:none}
+.ref-item.hl{background:#1a2338}
+.ref-name{font-size:11px;color:#dde6f5}
+.ref-id{font-size:8.5px;font-family:'JetBrains Mono',monospace;color:#2f4260}
+/* TEMPLATES */
+.tpl-row{display:flex;flex-wrap:wrap;gap:4px;min-height:22px}
+.tpl-chip{display:inline-flex;align-items:center;gap:4px;background:#101b2e;border:1px solid #1a2d4a;border-radius:4px;padding:3px 7px;font-size:9px;font-family:'JetBrains Mono',monospace;color:#6e85a8}
+.tpl-chip.saved{background:rgba(15,212,162,0.06);border-color:rgba(15,212,162,0.20);color:#0fd4a2}
+.chip-icon{font-size:8px;opacity:0.6}
+/* QUERY PREVIEW */
+.qprev{background:#07090f;border:1px solid #0f1825;border-radius:4px;padding:6px 28px 6px 9px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#6e85a8;line-height:1.6;min-height:24px;position:relative}
+.qt{color:#6b96ff;font-weight:600}
+.qa{color:#2f4260}
+.qf{color:#0fd4a2}
+.qo{color:#f5a428}
+.qv{color:#dde6f5}
+.qs-sep{color:#2f4260}
+/* ACTION ROW */
+.act{display:flex;gap:6px;padding:8px 12px 10px}
+.search-btn{flex:1;height:36px;background:linear-gradient(135deg,#4a7cff,#6b4bff);border:none;border-radius:6px;color:#fff;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.clear-btn{height:36px;padding:0 14px;background:#101525;border:1px solid #1c2d4a;border-radius:6px;color:#6e85a8;font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:5px}
+.btn-kbd{background:rgba(255,255,255,0.15);border-radius:3px;padding:1px 5px;font-size:9px;font-family:'JetBrains Mono',monospace;margin-left:auto}
+/* POPUP FOOTER */
+.pf{border-top:1px solid #0f1825;padding:5px 12px;display:flex;align-items:center;justify-content:space-between;background:#0b0e18}
+.pf-hint{font-size:9px;color:#2f4260;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:3px}
+.kbd{display:inline-flex;align-items:center;background:#101525;border:1px solid #1c2d4a;border-radius:3px;padding:0 5px;font-size:8px;color:#6e85a8;font-family:'JetBrains Mono',monospace;line-height:15px}
+.pf-ver{font-size:9px;color:#2f4260;font-family:'JetBrains Mono',monospace}
+/* SECTION DIVIDERS */
+.pb-sec{border-bottom:1px solid #0f1825;padding-bottom:8px;margin-bottom:2px}
+/* SAVE TOOLBAR */
+.tpl-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.tpl-lbl{font-size:9px;font-weight:600;color:#2f4260;text-transform:uppercase;letter-spacing:0.5px}
+.toolbar-btns{display:flex;gap:5px}
+.ia-btn{display:inline-flex;align-items:center;gap:3px;background:#101525;border:1px solid #1a2540;border-radius:4px;color:#6e85a8;font-size:9px;font-weight:500;padding:3px 7px}
+.sv-btn{background:#101525;border:1px dashed #1c2d4a;border-radius:4px;color:#6e85a8;font-size:9.5px;font-weight:600;padding:3px 8px}
+/* EMPTY HINT */
+.empty-hint{font-size:9px;color:#2f4260;font-style:italic;font-family:'JetBrains Mono',monospace;padding:3px 0}
+/* STATUS */
+.status{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:4px;font-size:10.5px;font-weight:500;border-left:2px solid transparent;margin:0 12px}
+.status.info{background:rgba(74,124,255,0.10);color:#4a7cff;border-left-color:#4a7cff}
+.status.success{background:rgba(15,212,162,0.10);color:#0fd4a2;border-left-color:#0fd4a2}
+/* CALLOUT BADGE */
+.callout{position:absolute;background:#4a7cff;color:#fff;font-size:11px;font-weight:700;font-family:'Outfit',sans-serif;padding:5px 12px;border-radius:100px;white-space:nowrap;pointer-events:none}
+.callout::after{content:'';position:absolute;width:8px;height:8px;background:#4a7cff;transform:rotate(45deg)}
+/* DECORATIVE GRID */
+.ss-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(74,124,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(74,124,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+/* LEFT SIDE VERTICAL ACCENT */
+.ss-left-accent{position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,transparent,#4a7cff 30%,#4a7cff 70%,transparent)}
+/* LOADING HINT */
+.hint-label{font-size:10px;color:#4a7cff;font-weight:600;background:rgba(74,124,255,0.08);border:1px solid rgba(74,124,255,0.2);border-radius:4px;padding:2px 8px;display:inline-block;margin-bottom:6px}
+/* SCREENSHOT LABEL */
+.ss-label{position:absolute;top:12px;right:16px;font-size:10px;color:#2f4260;font-family:'JetBrains Mono',monospace;z-index:10}
+/* ADD COND BUTTON */
+.add-cond{display:inline-flex;align-items:center;gap:4px;background:rgba(74,124,255,0.10);border:1px solid rgba(74,124,255,0.35);border-radius:4px;color:#4a7cff;font-size:10.5px;font-weight:600;padding:0 10px;height:30px;cursor:pointer}
+/* FIELD CLEAR BTN */
+.fc-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#2f4260;font-size:11px;cursor:pointer}
+.ac-wrap{position:relative;width:100%}
+.ac-wrap input{width:100%}
+/* SECTION DIVIDERS in popup */
+.ps{border-bottom:1px solid #0f1825;padding-bottom:8px}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     SCREENSHOT 1 — Overview / Hero
+     ═══════════════════════════════════════════ -->
+<div class="ss" id="ss1">
+  <div class="ss-grid"></div>
+  <div class="ss-left-accent"></div>
+  <div class="ss-label">Screenshot 1 / 4 — 1280×800</div>
+  <div class="ss-left">
+    <div class="ss-num">ServiceNow Power Search</div>
+    <div class="ss-badge"><span class="ss-badge-dot"></span>v1.5.0 — Now on Edge</div>
+    <h1 class="ss-headline">Build complex<br>ServiceNow queries<br><span>in seconds</span></h1>
+    <p class="ss-sub">A keyboard-first query builder that fetches fields live from your instance, builds encoded queries, and opens results in one click.</p>
+    <div class="ss-features">
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Auto-detects your active ServiceNow tab and instance</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Pulls real fields from sys_dictionary — no manual typing</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Syntax-highlighted live query preview with one-click copy</div>
+    </div>
+  </div>
+  <div class="ss-right">
+    <div class="ss-bg"></div>
+    <div class="popup">
+      <div class="ph">
+        <div class="ph-left">
+          <div class="ph-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <div><div class="ph-title">Power Search</div><div class="ph-sub">ServiceNow Query Builder</div></div>
+        </div>
+        <div class="ph-badge"><span class="ph-dot"></span>dev12345</div>
+      </div>
+      <div class="pb ps">
+        <div class="row">
+          <div class="fg">
+            <div class="fl">Table</div>
+            <div class="fi"><span class="fi-val">incident</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="fg" style="flex:2">
+            <div class="fl">Field</div>
+            <div class="fi active"><span class="fi-val">Short description</span></div>
+          </div>
+          <div class="fg shrink">
+            <div class="fl">Op</div>
+            <div class="ops">~ LIKE</div>
+          </div>
+        </div>
+        <div class="row" style="align-items:flex-end;gap:5px">
+          <div class="fg" style="flex:1">
+            <div class="fl">Value</div>
+            <div class="fi active"><span class="fi-val">network outage</span></div>
+          </div>
+          <div class="add-cond"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Add</div>
+        </div>
+        <div class="fg">
+          <div class="fl" style="justify-content:space-between"><span>Advanced <span style="font-weight:400;font-size:8px;text-transform:none;letter-spacing:0;opacity:0.6">(appended with ^)</span></span><span style="color:#2f4260;font-size:9px;cursor:pointer">clear</span></div>
+          <div class="fi" style="height:36px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#2f4260;align-items:flex-start;padding-top:8px"><span>active=true^state=1</span></div>
+        </div>
+      </div>
+      <div class="pb ps">
+        <div class="tpl-toolbar">
+          <div class="tpl-lbl">Recent &amp; Saved</div>
+          <div class="toolbar-btns"><div class="ia-btn">⬇ Import</div><div class="ia-btn">⬆ Export</div><div class="sv-btn">＋ Save</div></div>
+        </div>
+        <div class="tpl-row"><div class="tpl-chip"><span class="chip-icon">⏱</span>number~INC00</div><div class="tpl-chip"><span class="chip-icon">⏱</span>state=1</div></div>
+        <div class="tpl-row" style="margin-top:4px"><div class="tpl-chip saved"><span class="chip-icon">★</span>Open Incidents</div><div class="tpl-chip saved"><span class="chip-icon">★</span>My Changes</div></div>
+      </div>
+      <div class="pb" style="padding-bottom:6px">
+        <div class="fl">Query preview</div>
+        <div class="qprev"><span class="qt">incident</span><span class="qa"> → </span><span class="qf">short_description</span><span class="qo">LIKE</span><span class="qv">network outage</span><span class="qs-sep">^</span><span class="qv">active=true^state=1</span></div>
+      </div>
+      <div class="act">
+        <div class="search-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search<span class="btn-kbd">↵ Enter</span></div>
+        <div class="clear-btn"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Clear</div>
+      </div>
+      <div class="pf"><div class="pf-hint"><span class="kbd">Tab</span> nav <span class="kbd">↑↓</span> list <span class="kbd">Ctrl+↵</span> add</div><div class="pf-ver">v1.5.0</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREENSHOT 2 — Multi-Condition Builder
+     ═══════════════════════════════════════════ -->
+<div class="ss" id="ss2">
+  <div class="ss-grid"></div>
+  <div class="ss-left-accent"></div>
+  <div class="ss-label">Screenshot 2 / 4 — 1280×800</div>
+  <div class="ss-left">
+    <div class="ss-num">Multi-Condition Builder</div>
+    <div class="ss-badge"><span class="ss-badge-dot"></span>New in v1.5.0</div>
+    <h1 class="ss-headline">Stack <span>multiple</span><br>conditions with<br>one click</h1>
+    <p class="ss-sub">Hit ＋ Add (or Ctrl+Enter) to commit a condition as a pill chip. All conditions combine into a single encoded query automatically.</p>
+    <div class="ss-features">
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Add unlimited AND conditions joined with ^</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Each condition shows as a removable pill chip</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Mix with freeform Advanced query for full flexibility</div>
+    </div>
+  </div>
+  <div class="ss-right">
+    <div class="ss-bg"></div>
+    <div class="popup">
+      <div class="ph">
+        <div class="ph-left">
+          <div class="ph-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <div><div class="ph-title">Power Search</div><div class="ph-sub">ServiceNow Query Builder</div></div>
+        </div>
+        <div class="ph-badge"><span class="ph-dot"></span>dev12345</div>
+      </div>
+      <div class="pb ps">
+        <div class="row">
+          <div class="fg">
+            <div class="fl">Table</div>
+            <div class="fi"><span class="fi-val">change_request</span></div>
+          </div>
+        </div>
+        <!-- CONDITIONS CONTAINER -->
+        <div class="cond-row">
+          <div class="cond-hdr">
+            <div class="cond-lbl">Conditions <span class="cond-cnt">3</span></div>
+            <span style="color:#2f4260;font-size:9px;cursor:pointer">clear all</span>
+          </div>
+          <div class="cond-chips">
+            <div class="cond-chip">state<span style="color:#f5a428">=</span><span style="color:#dde6f5">-1</span> <span class="cond-x">✕</span></div>
+            <div class="cond-chip">priority<span style="color:#f5a428">≤</span><span style="color:#dde6f5">2</span> <span class="cond-x">✕</span></div>
+            <div class="cond-chip">risk<span style="color:#f5a428">=</span><span style="color:#dde6f5">low</span> <span class="cond-x">✕</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="fg" style="flex:2">
+            <div class="fl">Field</div>
+            <div class="fi active"><span class="fi-val">Assigned to</span></div>
+          </div>
+          <div class="fg shrink">
+            <div class="fl">Op</div>
+            <div class="ops">= equals</div>
+          </div>
+        </div>
+        <div class="row" style="align-items:flex-end;gap:5px">
+          <div class="fg" style="flex:1">
+            <div class="fl">Value</div>
+            <div class="fi active"><span class="fi-val">John Smith</span></div>
+          </div>
+          <div class="add-cond"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Add</div>
+        </div>
+      </div>
+      <div class="pb" style="padding-bottom:6px">
+        <div class="fl">Query preview</div>
+        <div class="qprev"><span class="qt">change_request</span><span class="qa"> → </span><span class="qf">state</span><span class="qo">=</span><span class="qv">-1</span><span class="qs-sep">^</span><span class="qf">priority</span><span class="qo">≤</span><span class="qv">2</span><span class="qs-sep">^</span><span class="qf">risk</span><span class="qo">=</span><span class="qv">low</span><span class="qs-sep">^</span><span class="qf">assigned_to</span><span class="qo">=</span><span class="qv">John Smith</span></div>
+      </div>
+      <div class="act">
+        <div class="search-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search<span class="btn-kbd">↵ Enter</span></div>
+        <div class="clear-btn"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Clear</div>
+      </div>
+      <div class="pf"><div class="pf-hint"><span class="kbd">Tab</span> nav <span class="kbd">↑↓</span> list <span class="kbd">Ctrl+↵</span> add cond</div><div class="pf-ver">v1.5.0</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREENSHOT 3 — Reference Field Resolver
+     ═══════════════════════════════════════════ -->
+<div class="ss" id="ss3">
+  <div class="ss-grid"></div>
+  <div class="ss-left-accent"></div>
+  <div class="ss-label">Screenshot 3 / 4 — 1280×800</div>
+  <div class="ss-left">
+    <div class="ss-num">Reference Field Resolver</div>
+    <div class="ss-badge"><span class="ss-badge-dot"></span>New in v1.5.0</div>
+    <h1 class="ss-headline">Resolve <span>reference</span><br>fields by display<br>name</h1>
+    <p class="ss-sub">When a reference-type field is selected, type the user's display name and the extension resolves it to the correct sys_id — automatically.</p>
+    <div class="ss-features">
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Detects reference fields from sys_dictionary type data</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Live lookup against the reference table (e.g. sys_user)</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>One click populates the value field with the sys_id</div>
+    </div>
+  </div>
+  <div class="ss-right">
+    <div class="ss-bg"></div>
+    <div class="popup">
+      <div class="ph">
+        <div class="ph-left">
+          <div class="ph-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <div><div class="ph-title">Power Search</div><div class="ph-sub">ServiceNow Query Builder</div></div>
+        </div>
+        <div class="ph-badge"><span class="ph-dot"></span>dev12345</div>
+      </div>
+      <div class="pb ps">
+        <div class="row">
+          <div class="fg">
+            <div class="fl">Table</div>
+            <div class="fi"><span class="fi-val">incident</span></div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="fg" style="flex:2">
+            <div class="fl">Field</div>
+            <div class="fi active"><span class="fi-val">Caller &nbsp;<span style="background:rgba(74,124,255,0.1);border:1px solid rgba(74,124,255,0.3);border-radius:2px;color:#4a7cff;font-size:7px;font-weight:700;font-family:'JetBrains Mono',monospace;padding:0 3px">REF</span></span></div>
+          </div>
+          <div class="fg shrink">
+            <div class="fl">Op</div>
+            <div class="ops">= equals</div>
+          </div>
+        </div>
+        <div class="row" style="align-items:flex-end;gap:5px">
+          <div class="fg" style="flex:1">
+            <div class="fl">Value</div>
+            <div class="fi" style="color:#4a7cff;font-family:'JetBrains Mono',monospace;font-size:10px"><span>a1b2c3d4e5f6789012345...</span></div>
+          </div>
+          <div class="add-cond"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Add</div>
+        </div>
+        <!-- REFERENCE RESOLVER -->
+        <div class="ref-box">
+          <div class="fl"><span class="ref-badge">REF</span> Resolve name → sys_id</div>
+          <div class="fi active" style="margin-top:0"><span class="fi-val">John</span></div>
+          <div class="ref-results">
+            <div class="ref-item hl">
+              <span class="ref-name">John Smith</span>
+              <span class="ref-id">a1b2c3d4e5f6…</span>
+            </div>
+            <div class="ref-item">
+              <span class="ref-name">John Doe</span>
+              <span class="ref-id">9f8e7d6c5b4a…</span>
+            </div>
+            <div class="ref-item">
+              <span class="ref-name">Johnny Walker</span>
+              <span class="ref-id">1a2b3c4d5e6f…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pb" style="padding-bottom:6px">
+        <div class="fl">Query preview</div>
+        <div class="qprev"><span class="qt">incident</span><span class="qa"> → </span><span class="qf">caller_id</span><span class="qo">=</span><span class="qv">a1b2c3d4e5f6789012345</span></div>
+      </div>
+      <div class="act">
+        <div class="search-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search<span class="btn-kbd">↵ Enter</span></div>
+        <div class="clear-btn"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Clear</div>
+      </div>
+      <div class="pf"><div class="pf-hint"><span class="kbd">Tab</span> nav <span class="kbd">↑↓</span> list <span class="kbd">Ctrl+↵</span> add</div><div class="pf-ver">v1.5.0</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREENSHOT 4 — Templates & Export
+     ═══════════════════════════════════════════ -->
+<div class="ss" id="ss4" style="border-bottom:none">
+  <div class="ss-grid"></div>
+  <div class="ss-left-accent"></div>
+  <div class="ss-label">Screenshot 4 / 4 — 1280×800</div>
+  <div class="ss-left">
+    <div class="ss-num">Saved Templates &amp; History</div>
+    <div class="ss-badge"><span class="ss-badge-dot"></span>Import &amp; Export</div>
+    <h1 class="ss-headline">Save and <span>share</span><br>your most-used<br>searches</h1>
+    <p class="ss-sub">Save searches as named templates, export them as JSON, and share with teammates. Recent searches are auto-saved so nothing is ever lost.</p>
+    <div class="ss-features">
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>One-click apply restores table, fields, and conditions</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Export templates as JSON — import on any machine</div>
+      <div class="ss-feat"><div class="ss-feat-dot"><div class="ss-feat-check"></div></div>Auto-saved recent history with quick-clear option</div>
+    </div>
+  </div>
+  <div class="ss-right">
+    <div class="ss-bg"></div>
+    <div class="popup">
+      <div class="ph">
+        <div class="ph-left">
+          <div class="ph-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <div><div class="ph-title">Power Search</div><div class="ph-sub">ServiceNow Query Builder</div></div>
+        </div>
+        <div class="ph-badge"><span class="ph-dot"></span>dev12345</div>
+      </div>
+      <div class="pb ps">
+        <div class="row">
+          <div class="fg"><div class="fl">Table</div><div class="fi"><span class="fi-val">incident</span></div></div>
+        </div>
+        <div class="row">
+          <div class="fg" style="flex:2"><div class="fl">Field</div><div class="fi active"><span class="fi-val">State</span></div></div>
+          <div class="fg shrink"><div class="fl">Op</div><div class="ops">= equals</div></div>
+        </div>
+        <div class="row" style="align-items:flex-end;gap:5px">
+          <div class="fg" style="flex:1"><div class="fl">Value</div><div class="fi active"><span class="fi-val">1</span></div></div>
+          <div class="add-cond"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Add</div>
+        </div>
+      </div>
+      <div class="pb ps">
+        <div class="tpl-toolbar">
+          <div class="tpl-lbl">Recent &amp; Saved <span style="color:#2f4260;font-size:9px;cursor:pointer;margin-left:5px">clear recent</span></div>
+          <div class="toolbar-btns">
+            <div class="ia-btn"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Import</div>
+            <div class="ia-btn"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export</div>
+            <div class="sv-btn">＋ Save</div>
+          </div>
+        </div>
+        <div class="tpl-row">
+          <div class="tpl-chip"><span class="chip-icon">⏱</span>short_desc~outage</div>
+          <div class="tpl-chip"><span class="chip-icon">⏱</span>state=1^priority≤2</div>
+          <div class="tpl-chip"><span class="chip-icon">⏱</span>caller=John</div>
+        </div>
+        <div class="tpl-row" style="margin-top:4px">
+          <div class="tpl-chip saved"><span class="chip-icon">★</span>Open P1/P2</div>
+          <div class="tpl-chip saved"><span class="chip-icon">★</span>My Assigned</div>
+          <div class="tpl-chip saved"><span class="chip-icon">★</span>Unassigned</div>
+        </div>
+      </div>
+      <div class="pb" style="padding-bottom:6px">
+        <div class="fl">Query preview</div>
+        <div class="qprev"><span class="qt">incident</span><span class="qa"> → </span><span class="qf">state</span><span class="qo">=</span><span class="qv">1</span></div>
+      </div>
+      <div class="status success" style="margin:0 0 4px">✓ Copied 3 templates to clipboard.</div>
+      <div class="act">
+        <div class="search-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Search<span class="btn-kbd">↵ Enter</span></div>
+        <div class="clear-btn"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Clear</div>
+      </div>
+      <div class="pf"><div class="pf-hint"><span class="kbd">Tab</span> nav <span class="kbd">↑↓</span> list <span class="kbd">Ctrl+↵</span> add</div><div class="pf-ver">v1.5.0</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
